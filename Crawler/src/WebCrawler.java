@@ -181,6 +181,11 @@ public class WebCrawler {
 		page.close();
 	}
 	
+	/**
+	 * Function for the next programmer to define which links to store in the results table.
+	 * There is a private variable currURL which can be utilised.
+	 * @return true for storing in the resultsTable.
+	 */
 	private boolean search()
 	{
 		return true;

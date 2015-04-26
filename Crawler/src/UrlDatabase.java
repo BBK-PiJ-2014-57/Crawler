@@ -15,6 +15,12 @@ public class UrlDatabase {
 	private final String priorityTableCol = "Priority";
 	private final String urlTableCol = "URL";
 	
+	/**
+	 * Ctor creates the DB. Assuming it doesn't exist. Lets the programmer handle the Exceptions, since 
+	 * the Database is essential for this program.
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 * @throws SQLException if Database and therefore Tables already exist.
+	 */
 	public UrlDatabase() throws ClassNotFoundException, SQLException
 	{
 		Class.forName("org.sqlite.JDBC");
@@ -23,6 +29,11 @@ public class UrlDatabase {
 	    createTables();
 	}
 	
+	/**
+	 * Re-opens connection to the Database, throws Exception upwards.
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 */
 	private void openConnection() throws SQLException, ClassNotFoundException
 	{
 		Class.forName("org.sqlite.JDBC");
@@ -30,10 +41,20 @@ public class UrlDatabase {
 	    		+ File.separator + "urlDB.db");
 	}
 	
+	/**
+	 * Closes connection before other processing.
+	 * @throws SQLException
+	 */
 	private void closeConnection() throws SQLException
 	{
 		dB.close();
 	}
+	
+	/**
+	 * Creates the needed SQLite Tables to store URLS (one temporary, one for results).
+	 * @throws SQLException
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 */
 	private void createTables() throws SQLException, ClassNotFoundException
 	{
 		openConnection();
@@ -47,6 +68,11 @@ public class UrlDatabase {
 		closeConnection();
 	}
 	
+	/**
+	 * Builds SQL Query for Creating a give Table
+	 * @param tableName the given Table name
+	 * @return the SQLite Query
+	 */
 	private String createCreateQuery(String tableName)
 	{
 		String toReturn = "CREATE TABLE ";
@@ -57,6 +83,13 @@ public class UrlDatabase {
 		return toReturn;
 	}
 	
+	/**
+	 * Builds SQL query for Inserting new URLs.
+	 * @param priority integer for the depth of the crawl
+	 * @param url the URL to store
+	 * @param tableName the table to receive it.
+	 * @return the SQLite query
+	 */
 	private String createInsertQuery(int priority, String url, String tableName)
 	{
 		String query = "INSERT INTO " + tableName + " (" + priorityTableCol + ", "
@@ -65,11 +98,20 @@ public class UrlDatabase {
 		return query;
 	}
 	
+	/**
+	 * Builds SQL query and inserts the given URL into the given Table, sends the throwables upwards.
+	 * @param priority integer for the depth of the crawl
+	 * @param url the URL to store
+	 * @param tempDB boolean as to whether it inserts into the Temporary table or not.
+	 * @throws SQLException if these is an issue with the Connection to the table or the SQL Query
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 */
 	public void insertEntryIntoDB(int priority, String url, boolean tempDB) throws SQLException, ClassNotFoundException
 	{
 		boolean add = true;
 		if(tempDB)
 		{
+			//Given the way the WebCrawler works. Only need to check for the temp table.
 			add = checkNewLink(url);
 		}
 		if(add)
@@ -84,6 +126,13 @@ public class UrlDatabase {
 		}
 	}
 	
+	/**
+	 * Returns the next URL to dive into.
+	 * @param priority the current depth of the program
+	 * @return the next URL to process
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 * @throws SQLException if there is an issue connecting and retrieving from the Database.
+	 */
 	public String returnTopURL(int priority) throws ClassNotFoundException, SQLException
 	{
 		openConnection();
@@ -114,6 +163,13 @@ public class UrlDatabase {
 		return url;
 	}
 	
+	/**
+	 * Ensures we have distinct values in the Database.
+	 * @param url the URL to check
+	 * @return true if this is a new Link
+	 * @throws ClassNotFoundException if the SQLite JDBC is not in the Classpath.
+	 * @throws SQLException if there is an issue connecting to the Database.
+	 */
 	private boolean checkNewLink(String url) throws ClassNotFoundException, SQLException
 	{
 		openConnection();
