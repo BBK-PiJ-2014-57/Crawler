@@ -49,10 +49,12 @@ public class HTMLread {
 			}
 			if(neverWhiteSpace)
 			{
-				if((char)isOutput == ch)
-					return Character.MIN_VALUE;
 				if(isOutput == -1)
 					endofPage = true;
+				if((char)isOutput == ch)
+					return Character.MIN_VALUE;
+				else
+					return (char)isOutput;
 			}
 			else
 			{
@@ -79,7 +81,7 @@ public class HTMLread {
 	public String readString(InputStream is, char ch1, char ch2) throws IOException
 	{
 		boolean endofPage = false;
-		String toReturn = null;
+		String toReturn = "";
 		char nextChar;
 		while(!endofPage)
 		{
@@ -88,7 +90,7 @@ public class HTMLread {
 			if(temp != -1)
 			{
 				nextChar = (char)temp;
-				toReturn.concat(Character.toString(nextChar));
+				toReturn += Character.toString(nextChar);
 				if(nextChar == ch1)
 					return toReturn;
 				if(nextChar == ch2)

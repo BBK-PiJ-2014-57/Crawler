@@ -10,11 +10,32 @@ import java.sql.SQLException;
  */
 public class WebCrawler {
 
+	/**
+	 * Pre-set override-able crawling depth.
+	 */
 	private int defaultDepth = 5;
+	
+	/**
+	 * User Inputted URL to start off the crawler.
+	 */
 	private URL startingURL;
+	
+	/**
+	 * Current page searching URL.
+	 */
+	private URL currURL;
+	
+	/**
+	 * SQLite DB to store the links we find.
+	 */
 	private UrlDatabase urlDB;
+	
 	private int depth = 0;
+	/**
+	 * HTML Tag we are searching for in the InputStream
+	 */
 	private String HTMLLinkTag = "href=\"";
+	
 	
 	/**
 	 * Ctor to allow the programmer to override the depth of the Crawler
@@ -31,13 +52,34 @@ public class WebCrawler {
 	 * @param URL the starting URL
 	 * @throws SQLException If Database is not able to be created due to incorrect permissions
 	 * @throws ClassNotFoundException in case the SQLite JDBC JAR cannot be found
+	 * @throws IOException if there are problems with the InputReader
 	 * @throws MalformedURLExpection exception thrown if given URL is invalid
 	 */
-	public void crawl(String URL) throws MalformedURLException, ClassNotFoundException, SQLException
+	public void crawl(String URL) throws ClassNotFoundException, SQLException, IOException
 	{
 		this.startingURL = new URL(URL);
 		this.urlDB = new UrlDatabase();
+		this.currURL = this.startingURL;
 		crawlPage(this.startingURL);
+		boolean urlsLeft = true;
+		while(depth < this.defaultDepth && urlsLeft)
+		{
+			while(this.currURL != null && urlsLeft)
+			{
+				String newURL = this.urlDB.returnTopURL(depth);
+				if(newURL != null)
+				{
+					this.currURL = new URL(newURL);
+					crawlPage(this.currURL);
+				}
+				else
+				{
+					if(depth == 1)
+						urlsLeft = false;
+					--depth;
+				}
+			}
+		}
 	}
 	
 	/**
@@ -61,8 +103,86 @@ public class WebCrawler {
 		}
 	}
 	
-	private void crawlPage(URL pageURL)
+	/**
+	 * Function which crawls the page, searches for links and adds them to the DB.
+	 * @param pageURL the web-page to be searched.
+	 * @throws ClassNotFoundException if SQLite JAR cannot be found.
+	 * @throws IOException if there are problems with InputReader
+	 */
+	private void crawlPage(URL pageURL) throws ClassNotFoundException, IOException
 	{
+		int idx = 0;
+		boolean search4Href = true;
+		HTMLread reader = new HTMLread();
+		try{
+			this.urlDB.insertEntryIntoDB(depth, pageURL.toString(), true);
+		}
+		catch(SQLException ex)
+		{
+			System.out.println("Unable to insert " + pageURL.toString() + " into Database");
+		}
 		InputStream page = urltoInputStream(pageURL);
+		if(page != null)
+		{
+			++depth;
+			try
+			{
+				while(page.available() > 0)
+				{
+					while(reader.skipSpace(page, '<') == Character.MIN_VALUE)
+					{
+						if(reader.readUntil(page, 'a', '>'))
+						{
+							while(reader.readUntil(page, 'h',  '>'))
+							{
+								idx = 1;
+								search4Href = true;
+								while(idx < 6 && search4Href)
+								{
+									if(reader.skipSpace(page, HTMLLinkTag.charAt(idx)) != Character.MIN_VALUE)
+									{
+										search4Href = false;
+									}
+									++idx;
+								}
+								if(search4Href)
+								{
+									String URLplusQuot = reader.readString(page, '\"', '#');
+									if(URLplusQuot != null)
+									{
+										try {
+											this.urlDB.insertEntryIntoDB(depth, URLplusQuot.substring(0, URLplusQuot.length() - 2), true);
+										} catch (SQLException e) {
+											System.out.println("Unable to add: " + URLplusQuot.substring(0, URLplusQuot.length() - 2) + " to the DB");
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			catch(IOException ex)
+			{
+				System.out.println("Done searching page: " + pageURL.toString());
+			}
+			finally
+			{
+				if(search())
+				{
+					try {
+						this.urlDB.insertEntryIntoDB(depth, pageURL.toString(), false);
+					} catch (SQLException e) {
+						System.out.println("Unable to add: " + pageURL.toString() + " to the DB");
+					}
+				}
+			}
+		}
+		page.close();
+	}
+	
+	private boolean search()
+	{
+		return true;
 	}
 }

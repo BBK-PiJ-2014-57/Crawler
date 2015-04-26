@@ -13,7 +13,7 @@ public class WebCrawlerTest {
 	{
 		WebCrawler testwc = new WebCrawler(5);
 		try {
-			testwc.crawl("https://moodle.bbk.ac.uk/pluginfile.php/370036/mod_resource/content/3/web%20crawler.pdf");
+			testwc.crawl("http://www.reddit.com/");
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
